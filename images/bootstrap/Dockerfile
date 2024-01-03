@@ -56,23 +56,13 @@ RUN dnf install -y \
     qemu-user-static \
     bind-utils \
     wget \
+    unzip \
+    java-11-openjdk \
+    which \
     python3-jinja2 &&\
   dnf -y clean all
 
-# Install gcloud
-ENV PATH=/google-cloud-sdk/bin:/workspace:${PATH} \
-    CLOUDSDK_CORE_DISABLE_PROMPTS=1
 
-RUN wget -q https://dl.google.com/dl/cloudsdk/channels/rapid/google-cloud-sdk.tar.gz && \
-    tar xzf google-cloud-sdk.tar.gz -C / && \
-    rm google-cloud-sdk.tar.gz && \
-    /google-cloud-sdk/install.sh \
-        --disable-installation-options \
-        --bash-completion=false \
-        --path-update=false \
-        --usage-reporting=false && \
-    gcloud components install alpha beta kubectl && \
-    gcloud info | tee /workspace/gcloud-info.txt
 
 #
 # BEGIN: PODMAN IN CONTAINER SETUP
@@ -100,18 +90,15 @@ ENV _CONTAINERS_USERNS_CONFIGURED=""
 #
 
 # Cache the most commonly used bazel versions in the container
-ARG ARCH
-RUN  curl -Lo ./bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-${ARCH} && \
-     chmod +x ./bazelisk && mv ./bazelisk /usr/local/bin/bazelisk && \
-     cd /usr/local/bin && ln -s bazelisk bazel
+ENV VERSION=7.0.0
+RUN mkdir bazel-${VERSION}
+RUN cd bazel-${VERSION}
+RUN wget https://github.com/bazelbuild/bazel/releases/download/${VERSION}/bazel-${VERSION}-dist.zip
+RUN unzip bazel-${VERSION}-dist.zip
+RUN ./compile.sh
+RUN mv ./output/bazel /usr/local/bin/
+RUN rm -rf /workspace/bazel-${VERSION}
 
-# Cache the most commonly used bazel versions inside the image
-# and remove resulting cache directories to save a few hundred MB
-RUN USE_BAZEL_VERSION=4.1.0 bazel version && \
-    USE_BAZEL_VERSION=4.2.1 bazel version && \
-    USE_BAZEL_VERSION=5.3.1 bazel version && \
-    USE_BAZEL_VERSION=5.4.1 bazel version && \
-    rm -rf /root/.cache/bazel
 
 # create mixin directories
 RUN mkdir -p /etc/setup.mixin.d/ && mkdir -p /etc/teardown.mixin.d/
@@ -127,3 +114,4 @@ COPY ["entrypoint.sh", "runner.sh", "create_bazel_cache_rcs.sh", \
         "/usr/local/bin/"]
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
