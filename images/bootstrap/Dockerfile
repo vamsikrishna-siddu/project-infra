@@ -30,7 +30,6 @@ RUN dnf install -y \
     cpio \
     dnf-plugins-core \
     findutils \
-    procps-ng \
     gcc \
     gcc-c++ \
     gettext \
