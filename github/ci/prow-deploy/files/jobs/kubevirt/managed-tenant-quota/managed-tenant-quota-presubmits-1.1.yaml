@@ -85,7 +85,7 @@ presubmits:
             - "automation/test.sh"
           env:
             - name: KUBEVIRT_RELEASE
-              value: v1.0.0
+              value: v1.0.1
           # docker-in-docker needs privileged mode
           securityContext:
             privileged: true

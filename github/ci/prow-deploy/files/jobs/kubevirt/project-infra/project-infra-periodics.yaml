@@ -7,7 +7,7 @@ periodics:
   cluster: kubevirt-prow-control-plane
   spec:
     containers:
-    - image: gcr.io/k8s-prow/commenter:v20231221-73538ad97a
+    - image: gcr.io/k8s-prow/commenter:v20240104-724ea5f0dc
       command:
       - /ko-app/commenter
       args:
@@ -24,7 +24,6 @@ periodics:
           label:lgtm label:approved
           status:failure
           -label:needs-rebase
-          -label:needs-ok-to-test
           repo:kubevirt/kubevirt
           repo:kubevirt/kubevirtci
       - --token=/etc/github/oauth
@@ -52,7 +51,7 @@ periodics:
   cluster: kubevirt-prow-control-plane
   spec:
     containers:
-    - image: gcr.io/k8s-prow/commenter:v20231221-73538ad97a
+    - image: gcr.io/k8s-prow/commenter:v20240104-724ea5f0dc
       command:
       - /ko-app/commenter
       args:
@@ -81,7 +80,7 @@ periodics:
   cluster: kubevirt-prow-control-plane
   spec:
     containers:
-    - image: gcr.io/k8s-prow/commenter:v20231221-73538ad97a
+    - image: gcr.io/k8s-prow/commenter:v20240104-724ea5f0dc
       command:
       - /ko-app/commenter
       args:
@@ -109,7 +108,7 @@ periodics:
   cluster: kubevirt-prow-control-plane
   spec:
     containers:
-    - image: gcr.io/k8s-prow/commenter:v20231221-73538ad97a
+    - image: gcr.io/k8s-prow/commenter:v20240104-724ea5f0dc
       command:
       - /ko-app/commenter
       args:
@@ -141,7 +140,7 @@ periodics:
   cluster: kubevirt-prow-control-plane
   spec:
     containers:
-    - image: gcr.io/k8s-prow/commenter:v20231221-73538ad97a
+    - image: gcr.io/k8s-prow/commenter:v20240104-724ea5f0dc
       command:
       - /ko-app/commenter
       args:
@@ -321,6 +320,35 @@ periodics:
         resources:
           requests:
             memory: "200Mi"
+- name: periodic-bump-crio-mirror-versions
+  interval: 24h
+  max_concurrency: 1
+  annotations:
+    testgrid-create-test-group: "false"
+  labels:
+    preset-github-credentials: "true"
+  decorate: true
+  decoration_config:
+    timeout: 1h
+    grace_period: 5m
+  extra_refs:
+  - org: kubevirt
+    repo: project-infra
+    base_ref: main
+    workdir: true
+  cluster: kubevirt-prow-control-plane
+  spec:
+    securityContext:
+      runAsUser: 0
+    containers:
+      - image: quay.io/kubevirtci/pr-creator:v20230103-9f4e101
+        command: ["/bin/sh"]
+        args:
+          - "-c"
+          - git-pr.sh -c "./hack/bump-crio-mirror-versions.sh" -p ./ -r project-infra -b crio-version-bump -T main
+        resources:
+          requests:
+            memory: "200Mi"
 - name: periodic-kubevirtci-cluster-unsupported-version-remover
   cron: "30 3 * * *"
   max_concurrency: 1
@@ -458,7 +486,7 @@ periodics:
   spec:
     containers:
     - name: peribolos
-      image: gcr.io/k8s-prow/peribolos:v20231221-73538ad97a
+      image: gcr.io/k8s-prow/peribolos:v20240104-724ea5f0dc
       command:
       - /ko-app/peribolos
       args:
