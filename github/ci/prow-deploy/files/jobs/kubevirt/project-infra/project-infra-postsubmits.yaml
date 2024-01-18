@@ -26,6 +26,35 @@ postsubmits:
                 memory: "8Gi"
               limits:
                 memory: "8Gi"
+    - name: publish-phased-plugin-image
+      always_run: false
+      run_if_changed: "external-plugins/phased/.*"
+      annotations:
+        testgrid-create-test-group: "false"
+      decorate: true
+      cluster: kubevirt-prow-control-plane
+      max_concurrency: 1
+      labels:
+        preset-bazel-cache: "true"
+        preset-kubevirtci-quay-credential: "true"
+        preset-podman-in-container-enabled: "true"
+      spec:
+        containers:
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
+            command:
+              - "/usr/local/bin/runner.sh"
+              - "/bin/bash"
+              - "-c"
+              - |
+                cat "$QUAY_PASSWORD" | podman login --username $(cat "$QUAY_USER") --password-stdin=true quay.io
+                make -C external-plugins/phased push
+            resources:
+              requests:
+                memory: "8Gi"
+              limits:
+                memory: "8Gi"
+            securityContext:
+              privileged: true
     - name: publish-release-blocker-image
       always_run: false
       run_if_changed: "external-plugins/release-blocker/.*"
@@ -39,7 +68,7 @@ postsubmits:
         preset-kubevirtci-quay-credential: "true"
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -66,7 +95,7 @@ postsubmits:
         preset-podman-in-container-enabled: "true"
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -95,7 +124,7 @@ postsubmits:
       cluster: kubevirt-prow-control-plane
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -127,7 +156,7 @@ postsubmits:
       cluster: kubevirt-prow-workloads
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -160,7 +189,7 @@ postsubmits:
       cluster: kubevirt-prow-workloads
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -190,7 +219,7 @@ postsubmits:
       cluster: kubevirt-prow-control-plane
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -220,7 +249,7 @@ postsubmits:
       cluster: kubevirt-prow-control-plane
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -254,7 +283,7 @@ postsubmits:
         base_ref: main
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -285,7 +314,7 @@ postsubmits:
       cluster: kubevirt-prow-control-plane
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -314,7 +343,7 @@ postsubmits:
       cluster: kubevirt-prow-control-plane
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -343,7 +372,7 @@ postsubmits:
       cluster: kubevirt-prow-workloads
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -372,7 +401,7 @@ postsubmits:
       cluster: kubevirt-prow-workloads
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -406,7 +435,7 @@ postsubmits:
       cluster: kubevirt-prow-workloads
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -435,7 +464,7 @@ postsubmits:
       cluster: kubevirt-prow-control-plane
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -535,7 +564,7 @@ postsubmits:
         securityContext:
           runAsUser: 0
         containers:
-        - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+        - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
           command:
             - "/usr/local/bin/runner.sh"
             - "/bin/bash"
@@ -573,7 +602,7 @@ postsubmits:
         securityContext:
           runAsUser: 0
         containers:
-        - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+        - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
           command:
             - "/usr/local/bin/runner.sh"
             - "/bin/bash"
@@ -608,7 +637,7 @@ postsubmits:
       cluster: kubevirt-prow-control-plane
       spec:
         containers:
-        - image: gcr.io/k8s-prow/configurator:v20240104-724ea5f0dc
+        - image: gcr.io/k8s-prow/configurator:v20240111-4df3614954
           command:
           - /ko-app/configurator
           args:
@@ -635,7 +664,7 @@ postsubmits:
         preset-bazel-cache: "true"
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -662,7 +691,7 @@ postsubmits:
         preset-bazel-cache: "true"
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -691,7 +720,7 @@ postsubmits:
         preset-bazel-cache: "true"
       spec:
         containers:
-          - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+          - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
             command:
               - "/usr/local/bin/runner.sh"
               - "/bin/bash"
@@ -719,7 +748,7 @@ postsubmits:
         preset-docker-mirror-proxy: "true"
       spec:
         containers:
-        - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+        - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
           command: ["/bin/sh"]
           args:
           - -c
@@ -752,7 +781,7 @@ postsubmits:
         securityContext:
           runAsUser: 0
         containers:
-        - image: quay.io/kubevirtci/bootstrap:v20231219-bf5e580
+        - image: quay.io/kubevirtci/bootstrap:v20240109-6e61e3b
           env:
           command:
           - /usr/local/bin/runner.sh
