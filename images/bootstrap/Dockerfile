@@ -57,9 +57,6 @@ RUN dnf install -y \
     qemu-user-static \
     bind-utils \
     wget \
-    unzip \
-    java-11-openjdk \
-    which \
     python3-jinja2 &&\
   dnf -y clean all
 
@@ -90,15 +87,9 @@ ENV _CONTAINERS_USERNS_CONFIGURED=""
 # END: PODMAN IN CONTAINER SETUP
 #
 
-# Cache the most commonly used bazel versions in the container
-ENV VERSION=7.0.0
-RUN mkdir bazel-${VERSION}
-RUN cd bazel-${VERSION}
-RUN wget https://github.com/bazelbuild/bazel/releases/download/${VERSION}/bazel-${VERSION}-dist.zip
-RUN unzip bazel-${VERSION}-dist.zip
-RUN ./compile.sh
-RUN mv ./output/bazel /usr/local/bin/
-RUN rm -rf /workspace/bazel-${VERSION}
+# Copy the bazel binary from the host
+
+COPY bazel /usr/local/bin/bazel
 
 
 # create mixin directories
