@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # Includes basic workspace setup, with gcloud and a bootstrap runner
-FROM fedora:39
+FROM debian:bullseye
 
 WORKDIR /workspace
 RUN mkdir -p /workspace
@@ -26,60 +26,62 @@ ARG IMAGE_ARG
 ENV IMAGE=${IMAGE_ARG}
 
 # Install packages
-RUN dnf install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    curl \
+    vim  \
     cpio \
-    dnf-plugins-core \
     findutils \
-    gcc \
-    gcc-c++ \
     gettext \
     git \
-    glibc-devel \
-    glibc-static \
-    iproute \
-    java-11-openjdk-devel \
+    iproute2 \
+    openjdk-11-jdk \
     jq \
-    libstdc++-static \
-    libvirt-devel \
+    qemu-system \ 
+    libvirt-clients \
+    libvirt-daemon-system \
     make \
     mercurial \
     patch \
-    procps-ng \
+    procps \
     protobuf-compiler \
-    python3-devel \
-    python-unversioned-command \
-    redhat-rpm-config \
+    python3 \
     rsync \
-    rsync-daemon \
     skopeo \
     sudo \
     buildah \
     qemu-user-static \
-    bind-utils \
+    bind9-utils \
     wget \
+    zip \
+    unzip \
     python3-jinja2 &&\
-  dnf -y clean all
-
-
+  rm -rf /var/lib/apt/lists/*
 
 #
 # BEGIN: PODMAN IN CONTAINER SETUP
 #
 
-RUN dnf -y update; dnf -y reinstall shadow-utils && \
-    dnf -y install crun podman --exclude container-selinux && \
-    dnf -y clean all && \
+RUN apt-get update; apt-get -y reinstall passwd && \
+    apt-get --no-install-recommends -y install crun podman && \
+    rm -rf /var/lib/apt/lists/* && \
     ln -s /usr/bin/podman /usr/bin/docker
 
 VOLUME /var/lib/containers
 
+
 COPY storage.conf /etc/containers/storage.conf
-RUN mkdir -p /var/lib/shared-images
+
+RUN mkdir -p /var/lib/shared-images/overlay-images /var/lib/shared-images/overlay-layers; touch /var/lib/shared-images/overlay-images/images.lock; touch /var/lib/shared-images/overlay-layers/layers.lock
 
 COPY containers.conf /etc/containers/containers.conf
 COPY podman.json /etc/containers/networks/podman.json
 
 RUN chmod 644 /etc/containers/containers.conf
+
+
+
 
 ENV _CONTAINERS_USERNS_CONFIGURED=""
 
@@ -87,9 +89,15 @@ ENV _CONTAINERS_USERNS_CONFIGURED=""
 # END: PODMAN IN CONTAINER SETUP
 #
 
-# Copy the bazel binary from the host
+ENV VERSION=5.4.1
+RUN mkdir bazel-${VERSION}
+RUN cd bazel-${VERSION}
+RUN wget https://github.com/bazelbuild/bazel/releases/download/${VERSION}/bazel-${VERSION}-dist.zip
+RUN unzip bazel-${VERSION}-dist.zip
+RUN ./compile.sh
+RUN mv ./output/bazel /usr/local/bin/
+RUN rm -rf /workspace/bazel-${VERSION}
 
-COPY bazel /usr/local/bin/bazel
 
 
 # create mixin directories
@@ -106,4 +114,3 @@ COPY ["entrypoint.sh", "runner.sh", "create_bazel_cache_rcs.sh", \
         "/usr/local/bin/"]
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-
