@@ -63,7 +63,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # BEGIN: PODMAN IN CONTAINER SETUP
 #
 
-RUN apt-get update; apt-get -y reinstall passwd && \
+# no need to reinstall the shadow-utils as the debian do not have any issue with podman
+# no need to exclude selinux as debain do not use selinux
+RUN apt-get update && \
     apt-get --no-install-recommends -y install crun podman && \
     rm -rf /var/lib/apt/lists/* && \
     ln -s /usr/bin/podman /usr/bin/docker
