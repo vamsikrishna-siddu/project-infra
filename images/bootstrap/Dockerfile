@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # Includes basic workspace setup, with gcloud and a bootstrap runner
-FROM fedora:39
+FROM debian:bullseye
 
 WORKDIR /workspace
 RUN mkdir -p /workspace
@@ -26,9 +26,12 @@ ARG IMAGE_ARG
 ENV IMAGE=${IMAGE_ARG}
 
 # Install packages
-RUN dnf install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    curl \
+    vim  \
     cpio \
-    dnf-plugins-core \
     findutils \
     gcc \
     gcc-c++ \
@@ -36,58 +39,47 @@ RUN dnf install -y \
     git \
     glibc-devel \
     glibc-static \
-    iproute \
-    java-11-openjdk-devel \
+    iproute2 \
+    openjdk-11-jdk \
     jq \
-    libstdc++-static \
-    libvirt-devel \
+    qemu-system \ 
+    libvirt-clients \
+    libvirt-daemon-system \
     make \
     mercurial \
     patch \
-    procps-ng \
+    procps \
     protobuf-compiler \
-    python3-devel \
-    python-unversioned-command \
-    redhat-rpm-config \
+    python3 \
     rsync \
-    rsync-daemon \
     skopeo \
     sudo \
     buildah \
     qemu-user-static \
-    bind-utils \
+    bind9-utils \
     wget \
+    zip \
+    unzip \
     python3-jinja2 &&\
-  dnf -y clean all
-
-# Install gcloud
-ENV PATH=/google-cloud-sdk/bin:/workspace:${PATH} \
-    CLOUDSDK_CORE_DISABLE_PROMPTS=1
-
-RUN wget -q https://dl.google.com/dl/cloudsdk/channels/rapid/google-cloud-sdk.tar.gz && \
-    tar xzf google-cloud-sdk.tar.gz -C / && \
-    rm google-cloud-sdk.tar.gz && \
-    /google-cloud-sdk/install.sh \
-        --disable-installation-options \
-        --bash-completion=false \
-        --path-update=false \
-        --usage-reporting=false && \
-    gcloud components install alpha beta kubectl && \
-    gcloud info | tee /workspace/gcloud-info.txt
+  rm -rf /var/lib/apt/lists/*
 
 #
 # BEGIN: PODMAN IN CONTAINER SETUP
 #
 
-RUN dnf -y update; dnf -y reinstall shadow-utils && \
-    dnf -y install crun podman --exclude container-selinux && \
-    dnf -y clean all && \
+# no need to reinstall the shadow-utils as the debian do not have any issue with podman
+# no need to exclude selinux as debain do not use selinux
+
+RUN apt-get -y update && \
+    apt-get --no-install-recommends -y install crun podman && \
+    rm -rf /var/lib/apt/lists/* && \
     ln -s /usr/bin/podman /usr/bin/docker
 
 VOLUME /var/lib/containers
 
 COPY storage.conf /etc/containers/storage.conf
-RUN mkdir -p /var/lib/shared-images
+
+RUN mkdir -p /var/lib/shared-images/overlay-images /var/lib/shared-images/overlay-layers; touch /var/lib/shared-images/overlay-images/images.lock; touch /var/lib/shared-images/overlay-layers/layers.lock
 
 COPY containers.conf /etc/containers/containers.conf
 COPY podman.json /etc/containers/networks/podman.json
@@ -100,19 +92,15 @@ ENV _CONTAINERS_USERNS_CONFIGURED=""
 # END: PODMAN IN CONTAINER SETUP
 #
 
-# Cache the most commonly used bazel versions in the container
-ARG ARCH
-RUN  curl -Lo ./bazelisk https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-${ARCH} && \
-     chmod +x ./bazelisk && mv ./bazelisk /usr/local/bin/bazelisk && \
-     cd /usr/local/bin && ln -s bazelisk bazel
+ENV VERSION=5.4.1
+RUN mkdir bazel-${VERSION}
+RUN cd bazel-${VERSION}
+RUN wget https://github.com/bazelbuild/bazel/releases/download/${VERSION}/bazel-${VERSION}-dist.zip
+RUN unzip bazel-${VERSION}-dist.zip
+RUN ./compile.sh
+RUN mv ./output/bazel /usr/local/bin/
+RUN rm -rf /workspace/bazel-${VERSION}
 
-# Cache the most commonly used bazel versions inside the image
-# and remove resulting cache directories to save a few hundred MB
-RUN USE_BAZEL_VERSION=4.1.0 bazel version && \
-    USE_BAZEL_VERSION=4.2.1 bazel version && \
-    USE_BAZEL_VERSION=5.3.1 bazel version && \
-    USE_BAZEL_VERSION=5.4.1 bazel version && \
-    rm -rf /root/.cache/bazel
 
 # create mixin directories
 RUN mkdir -p /etc/setup.mixin.d/ && mkdir -p /etc/teardown.mixin.d/
