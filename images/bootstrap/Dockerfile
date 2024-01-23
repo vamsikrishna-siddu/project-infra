@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # Includes basic workspace setup, with gcloud and a bootstrap runner
-FROM debian:bullseye
+FROM fedora:37
 
 WORKDIR /workspace
 RUN mkdir -p /workspace
@@ -26,64 +26,62 @@ ARG IMAGE_ARG
 ENV IMAGE=${IMAGE_ARG}
 
 # Install packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    curl \
-    vim  \
+RUN dnf install -y \
     cpio \
+    dnf-plugins-core \
     findutils \
+    gcc \
+    gcc-c++ \
     gettext \
     git \
-    iproute2 \
-    openjdk-11-jdk \
+    glibc-devel \
+    glibc-static \
+    iproute \
+    java-11-openjdk-devel \
     jq \
-    qemu-system \ 
-    libvirt-clients \
-    libvirt-daemon-system \
+    libstdc++-static \
+    libvirt-devel \
     make \
     mercurial \
     patch \
-    procps \
+    procps-ng \
     protobuf-compiler \
-    python3 \
+    python3-devel \
+    python-unversioned-command \
+    redhat-rpm-config \
     rsync \
+    rsync-daemon \
     skopeo \
     sudo \
     buildah \
     qemu-user-static \
-    bind9-utils \
+    bind-utils \
     wget \
-    zip \
     unzip \
+    zip \
+    which \
     python3-jinja2 &&\
-  rm -rf /var/lib/apt/lists/*
+  dnf -y clean all
+
 
 #
 # BEGIN: PODMAN IN CONTAINER SETUP
 #
 
-# no need to reinstall the shadow-utils as the debian do not have any issue with podman
-# no need to exclude selinux as debain do not use selinux
-RUN apt-get update && \
-    apt-get --no-install-recommends -y install crun podman && \
-    rm -rf /var/lib/apt/lists/* && \
+RUN dnf -y update; dnf -y reinstall shadow-utils && \
+    dnf -y install crun podman --exclude container-selinux && \
+    dnf -y clean all && \
     ln -s /usr/bin/podman /usr/bin/docker
 
 VOLUME /var/lib/containers
 
-
 COPY storage.conf /etc/containers/storage.conf
-
-RUN mkdir -p /var/lib/shared-images/overlay-images /var/lib/shared-images/overlay-layers; touch /var/lib/shared-images/overlay-images/images.lock; touch /var/lib/shared-images/overlay-layers/layers.lock
+RUN mkdir -p /var/lib/shared-images
 
 COPY containers.conf /etc/containers/containers.conf
 COPY podman.json /etc/containers/networks/podman.json
 
 RUN chmod 644 /etc/containers/containers.conf
-
-
-
 
 ENV _CONTAINERS_USERNS_CONFIGURED=""
 
@@ -93,13 +91,13 @@ ENV _CONTAINERS_USERNS_CONFIGURED=""
 
 ENV VERSION=5.4.1
 RUN mkdir bazel-${VERSION}
-RUN cd bazel-${VERSION}
+WORKDIR /workspace/bazel-${VERSION}
 RUN wget https://github.com/bazelbuild/bazel/releases/download/${VERSION}/bazel-${VERSION}-dist.zip
 RUN unzip bazel-${VERSION}-dist.zip
 RUN ./compile.sh
 RUN mv ./output/bazel /usr/local/bin/
-RUN rm -rf /workspace/bazel-${VERSION}
-
+WORKDIR /workspace
+RUN rm -rf ./bazel-${VERSION}
 
 
 # create mixin directories
@@ -116,3 +114,4 @@ COPY ["entrypoint.sh", "runner.sh", "create_bazel_cache_rcs.sh", \
         "/usr/local/bin/"]
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
