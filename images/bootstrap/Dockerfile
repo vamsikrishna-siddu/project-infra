@@ -33,12 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     vim  \
     cpio \
     findutils \
-    gcc \
-    gcc-c++ \
     gettext \
     git \
-    glibc-devel \
-    glibc-static \
     iproute2 \
     openjdk-11-jdk \
     jq \
@@ -94,13 +90,13 @@ ENV _CONTAINERS_USERNS_CONFIGURED=""
 
 ENV VERSION=5.4.1
 RUN mkdir bazel-${VERSION}
-RUN cd bazel-${VERSION}
+WORKDIR /workspace/bazel-${VERSION}
 RUN wget https://github.com/bazelbuild/bazel/releases/download/${VERSION}/bazel-${VERSION}-dist.zip
 RUN unzip bazel-${VERSION}-dist.zip
 RUN ./compile.sh
 RUN mv ./output/bazel /usr/local/bin/
-RUN rm -rf /workspace/bazel-${VERSION}
-
+WORKDIR /workspace
+RUN rm -rf ./bazel-${VERSION}
 
 # create mixin directories
 RUN mkdir -p /etc/setup.mixin.d/ && mkdir -p /etc/teardown.mixin.d/
